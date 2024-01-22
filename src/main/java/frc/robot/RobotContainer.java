@@ -11,7 +11,7 @@ import frc.robot.subsystems.ShooterSubsystem;
 
 public class RobotContainer {
   private CommandXboxController userController;
-  private ShooterSubsystem shooterSubsystem;
+  private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
 
   public RobotContainer() {
     configureBindings();

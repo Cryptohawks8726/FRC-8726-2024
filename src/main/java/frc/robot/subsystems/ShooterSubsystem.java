@@ -14,15 +14,15 @@ import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 
 public class ShooterSubsystem extends SubsystemBase {
     //Motor Controllers & Motor Encoders For the Conveyor and Flywheel
-    private final CANSparkMax conveyorMotor = new CANSparkMax(0, MotorType.kBrushless);
-    private final CANSparkMax flywheelMotor = new CANSparkMax(0, MotorType.kBrushless);
+    private final CANSparkMax conveyorMotor = new CANSparkMax(31, MotorType.kBrushless);
+    private final CANSparkMax flywheelMotor = new CANSparkMax(11, MotorType.kBrushless);
     private final RelativeEncoder conveyorEncoder = conveyorMotor.getEncoder();
     private final RelativeEncoder flywheelEncoder = flywheelMotor.getEncoder();
 
     //Feedforward control
-    private double flywheelSetpoint = 500;
+    private double flywheelSetpoint = 2000;
     private final double kS = 0;
-    private final double kV = 0;
+    private final double kV = 0.08;
     private final SimpleMotorFeedforward flywheelFeedforward = new SimpleMotorFeedforward(kS, kV);
 
     //Feedback control
@@ -34,15 +34,20 @@ public class ShooterSubsystem extends SubsystemBase {
     //Decides whether or not the flywheel should be given voltage. If no, the flywheel's voltage is set to 0.
     private boolean flywheelActive = false;
 
+    //yeag
+    public ShooterSubsystem(){};
+
     //Administers voltage to the motors in real-time
     @Override 
     public void periodic() {
-        if (flywheelActive) {    
+        if (flywheelActive) { 
+            System.out.println("yeag");   
             double feedbackOutputVelocity = flywheelFeedback.calculate(flywheelSetpoint);
             double feedforwardOutputVolts = flywheelFeedforward.calculate(feedbackOutputVelocity);
             flywheelMotor.setVoltage(feedforwardOutputVolts);
         }
         else {
+            System.out.println("yuag");
             flywheelMotor.setVoltage(0);
         }
     }
@@ -51,6 +56,7 @@ public class ShooterSubsystem extends SubsystemBase {
     //Only toggles the flywheel if the subsystem is not in the process of firing
     public InstantCommand toggleFlywheel() {
         return new InstantCommand(() -> {
+            System.out.println("yeag");
             flywheelActive = !flywheelActive;
         }, this);
     }
