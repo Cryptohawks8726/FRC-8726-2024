@@ -10,7 +10,7 @@ import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.subsystems.ShooterSubsystem;
 
 public class RobotContainer {
-  private CommandXboxController userController;
+  private CommandXboxController userController = new CommandXboxController(0);
   private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
 
   public RobotContainer() {

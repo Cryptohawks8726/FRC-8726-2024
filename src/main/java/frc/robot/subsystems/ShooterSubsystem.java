@@ -14,10 +14,12 @@ import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 
 public class ShooterSubsystem extends SubsystemBase {
     //Motor Controllers & Motor Encoders For the Conveyor and Flywheel
-    private final CANSparkMax conveyorMotor = new CANSparkMax(31, MotorType.kBrushless);
-    private final CANSparkMax flywheelMotor = new CANSparkMax(11, MotorType.kBrushless);
+    private final CANSparkMax conveyorMotor = new CANSparkMax(0, MotorType.kBrushless);
+    private final CANSparkMax flywheelMotor1 = new CANSparkMax(11, MotorType.kBrushless);
+    private final CANSparkMax flywheelMotor2 = new CANSparkMax(0, MotorType.kBrushless);
     private final RelativeEncoder conveyorEncoder = conveyorMotor.getEncoder();
-    private final RelativeEncoder flywheelEncoder = flywheelMotor.getEncoder();
+    private final RelativeEncoder flywheel1Encoder = flywheelMotor1.getEncoder();
+    private final RelativeEncoder flywheel2Encoder = flywheelMotor1.getEncoder();
 
     //Feedforward control
     private double flywheelSetpoint = 2000;
@@ -44,11 +46,13 @@ public class ShooterSubsystem extends SubsystemBase {
             System.out.println("yeag");   
             double feedbackOutputVelocity = flywheelFeedback.calculate(flywheelSetpoint);
             double feedforwardOutputVolts = flywheelFeedforward.calculate(feedbackOutputVelocity);
-            flywheelMotor.setVoltage(feedforwardOutputVolts);
+            flywheelMotor1.setVoltage(feedforwardOutputVolts);
+            flywheelMotor2.setVoltage(feedforwardOutputVolts);
         }
         else {
             System.out.println("yuag");
-            flywheelMotor.setVoltage(0);
+            flywheelMotor1.setVoltage(0);
+            flywheelMotor2.setVoltage(0);
         }
     }
 
@@ -72,7 +76,7 @@ public class ShooterSubsystem extends SubsystemBase {
     public SequentialCommandGroup shoot() {
         return 
             new InstantCommand(() -> {
-                if (Math.abs(flywheelEncoder.getVelocity() - flywheelSetpoint) < 0.5) {
+                if (Math.abs(flywheel1Encoder.getVelocity() - flywheelSetpoint) < 0.5 && Math.abs(flywheel2Encoder.getVelocity() - flywheelSetpoint) < 0.5) {
                     conveyorMotor.setVoltage(4);
                 }
             }, this)
