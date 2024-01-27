@@ -18,9 +18,9 @@ public class RobotContainer {
   }
 
   private void configureBindings() {
-    userController.a().onTrue(shooterSubsystem.toggleFlywheel());
-    userController.b().onTrue(shooterSubsystem.shoot());
-    
+    userController.a().onTrue(shooterSubsystem.startIntake());
+    userController.y().onTrue(shooterSubsystem.stopMotors(true, true));
+    userController.x().onTrue(shooterSubsystem.fireNote());
   }
 
   public Command getAutonomousCommand() {
