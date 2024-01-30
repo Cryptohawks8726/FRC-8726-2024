@@ -21,7 +21,7 @@ import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 
 public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     //Motor Controllers & Motor Encoders For the Conveyor and Flywheel
-    private final CANSparkMax conveyorMotor = new CANSparkMax(9, MotorType.kBrushless);
+    private final CANSparkMax conveyorMotor = new CANSparkMax(8, MotorType.kBrushless);
     private final CANSparkMax topFlywheelMotor = new CANSparkMax(30, MotorType.kBrushless);
     private final CANSparkMax bottomFlywheelMotor = new CANSparkMax(11, MotorType.kBrushless);
     private final RelativeEncoder conveyorEncoder = conveyorMotor.getEncoder();
@@ -29,12 +29,12 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     private final RelativeEncoder bottomFlywheelEncoder = bottomFlywheelMotor.getEncoder();
 
     //Conveyor setpoint
-    private final double conveyorSetpoint = 2;
+    private final double conveyorSetpoint = 3;
 
     //Feedforward control
-    private double flywheelSetpoint = 5600; 
+    private double flywheelSetpoint = 2400; 
     private final double kS = 0;
-    private final double kV = 0.00211;
+    private final double kV = 12.0/2448;
     private final SimpleMotorFeedforward flywheelFeedforward = new SimpleMotorFeedforward(kS, kV);
 
     //Feedback control
@@ -56,6 +56,7 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
         topFlywheelMotor.setSmartCurrentLimit(40);
         bottomFlywheelMotor.setSmartCurrentLimit(40);
         bottomFlywheelMotor.follow(topFlywheelMotor);
+        conveyorMotor.setInverted(true);
     };
 
     //Implementation of getAsBoolean
@@ -66,6 +67,7 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     //Administers voltage to the motors in real-time
     @Override 
     public void periodic() {
+        System.out.println(flywheelsActive);
         if (flywheelsActive) { 
             //double feedbackOutputVelocity = flywheelFeedback.calculate(flywheelSetpoint);
             double feedforwardOutputVolts = flywheelFeedforward.calculate(flywheelSetpoint);
@@ -104,11 +106,10 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
             new InstantCommand(() -> {
                 conveyorActive = true;
             }, this)
-            .andThen(new WaitUntilCommand(this))
-            .andThen(new InstantCommand(() -> {
-                startFlywheels();
-                stopMotors(false, true);
-            })
+            ///.andThen(new WaitUntilCommand(this))
+            //.andThen(new WaitCommand(1))
+            .andThen(startFlywheels())
+            .andThen(stopMotors(false, true)
         );
     }
 
@@ -151,5 +152,6 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
             }
         });
     }
+
 }
 
