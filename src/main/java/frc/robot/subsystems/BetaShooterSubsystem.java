@@ -5,10 +5,11 @@ import java.util.function.BooleanSupplier;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.ColorSensorV3;
 import com.revrobotics.RelativeEncoder;
+import com.revrobotics.SparkPIDController;
+import com.revrobotics.CANSparkBase.ControlType;
 import com.revrobotics.CANSparkLowLevel.MotorType;
+import com.revrobotics.SparkPIDController.ArbFFUnits;
 
-import edu.wpi.first.math.controller.PIDController;
-import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -18,7 +19,7 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 
-public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
+public class BetaShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     //Motor Controllers & Motor Encoders For the Conveyor and Flywheel
     private final CANSparkMax conveyorMotor = new CANSparkMax(7, MotorType.kBrushless);
     private final CANSparkMax topFlywheelMotor = new CANSparkMax(11, MotorType.kBrushless);
@@ -28,19 +29,19 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     private final RelativeEncoder bottomFlywheelEncoder = bottomFlywheelMotor.getEncoder();
 
     //Conveyor setpoint
-    private final double conveyorSetpoint = 3;
+    private final double conveyorSetpoint = 8;
 
     //Feedforward control
     private double flywheelSetpoint = 1425; //5700 (Motor RMP Maximum)/4 (Gearbox Ratio)
     private final double kS = 0;
     private final double kV = 12.0/2448;
-    private final SimpleMotorFeedforward flywheelFeedforward = new SimpleMotorFeedforward(kS, kV);
 
     //Feedback control
     private final double kP = 0;
     private final double kI = 0;
     private final double kD = 0;
-    private final PIDController flywheelFeedback = new PIDController(kP, kI, kD);
+    SparkPIDController topPID = topFlywheelMotor.getPIDController();
+    SparkPIDController bottomPID = bottomFlywheelMotor.getPIDController();
 
     //Manage whether or not the system's motors recieve power
     private boolean flywheelsActive = false;
@@ -49,8 +50,26 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     //Color sensor
     private ColorSensorV3 noteSensor = new ColorSensorV3(Port.kMXP);
 
-    //Configures Flywheel Motors
-    public ShooterSubsystem() {
+    enum toggleMotorsStates {
+        disable,
+        enable,
+        proceed
+    }
+
+    //Configures flywheel motors
+    public BetaShooterSubsystem() {
+        //Feedforward configuration
+        topPID.setFF(kV);
+        bottomPID.setFF(kV);
+
+        //Feedback configuration
+        topPID.setP(kP);
+        topPID.setI(kI);
+        topPID.setD(kD);
+        bottomPID.setP(kP);
+        bottomPID.setI(kI);
+        bottomPID.setD(kD);
+
         topFlywheelMotor.setInverted(false);
         bottomFlywheelMotor.setInverted(true);
         conveyorMotor.setInverted(false);
@@ -71,31 +90,12 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
         return true;
     }
 
-    //Administers voltage to the motors in real-time
-    @Override 
-    public void periodic() {
-        if (flywheelsActive) { 
-            //double feedbackOutputVelocity = flywheelFeedback.calculate(flywheelSetpoint);
-            double feedforwardOutputVolts = flywheelFeedforward.calculate(flywheelSetpoint);
-            topFlywheelMotor.setVoltage(feedforwardOutputVolts);
-        }
-        else {
-            topFlywheelMotor.setVoltage(0);
-        }
-
-        if (conveyorActive) {
-            conveyorMotor.setVoltage(10);
-        }
-        else {
-            conveyorMotor.setVoltage(0);
-        }
-    }
-
     //Activates the flywheels at a designated speed
     public InstantCommand startFlywheels(float motorSpeed) {
         return new InstantCommand(() -> {
             flywheelSetpoint = motorSpeed;
-            flywheelsActive = true;
+            topPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
+            bottomPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
         });
     }
 
@@ -105,7 +105,6 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
             flywheelsActive = true;
         });
     }
-    
 
     //SequentialCommandGroup which activates the intake and activates the flywheel motors once a ring is detected.
     public SequentialCommandGroup startIntake() {
@@ -116,7 +115,7 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
             .andThen(new WaitUntilCommand(this))
             .andThen(new WaitCommand(1))
             .andThen(startFlywheels())
-            .andThen(stopMotors(false, false /*true*/)
+            .andThen(toggleMotors(toggleMotorsStates.proceed, toggleMotorsStates.proceed /*toggleMotorsStates.disable*/)
             );
     }
 
@@ -132,27 +131,34 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
         return 
             new InstantCommand(() -> {
                 if (Math.abs(topFlywheelEncoder.getVelocity() - flywheelSetpoint) < 250 && Math.abs(bottomFlywheelEncoder.getVelocity() - flywheelSetpoint) < 250) {
-                    conveyorActive = true;
+                    toggleMotors(toggleMotorsStates.proceed, toggleMotorsStates.disable);
                 }
                 if (true) {
-                    System.out.println("FAIL");
                     System.out.println(topFlywheelEncoder.getVelocity());
                     System.out.println(bottomFlywheelEncoder.getVelocity());
                 }
             }, this)
             .andThen(new WaitCommand(1.5))
-            .andThen(stopMotors(true, true))
+            .andThen(toggleMotors(toggleMotorsStates.disable, toggleMotorsStates.disable))
             .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
     }
 
-    public InstantCommand stopMotors(boolean flywheel, boolean conveyor) {
+    public InstantCommand toggleMotors(toggleMotorsStates activateFlywheel, toggleMotorsStates activateConveyor) {
         return new InstantCommand(() -> {
-            if (flywheel) {
-                flywheelsActive = false;
+            if (activateFlywheel == toggleMotorsStates.enable) {
+                topPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
+                bottomPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
+            }
+            else if (activateFlywheel == toggleMotorsStates.disable) {
+                topPID.setReference(0, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
+                bottomPID.setReference(0, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
             }
 
-            if (conveyor) {
-                conveyorActive = false;
+            if (activateConveyor == toggleMotorsStates.enable) {
+                conveyorMotor.setVoltage(conveyorSetpoint);
+            }
+            else if (activateConveyor == toggleMotorsStates.disable) {
+                conveyorMotor.setVoltage(0);
             }
         });
     }
