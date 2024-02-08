@@ -6,20 +6,26 @@ package frc.robot;
 
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController; 
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.subsystems.BetaShooterSubsystem;
+import frc.robot.subsystems.BetaShooterSubsystem.toggleMotorsStates;
 import frc.robot.subsystems.ShooterSubsystem;
 
 public class RobotContainer {
   private CommandXboxController userController = new CommandXboxController(0);
-  private ShooterSubsystem shooterSubsystem = new ShooterSubsystem();
+  private BetaShooterSubsystem shooterSubsystem = new BetaShooterSubsystem();
 
   public RobotContainer() {
     configureBindings();
   }
 
   private void configureBindings() {
-    userController.a().onTrue(shooterSubsystem.startIntake());
+    /*userController.a().onTrue(shooterSubsystem.startIntake());
     userController.y().onTrue(shooterSubsystem.stopMotors(true, true));
+    userController.x().onTrue(shooterSubsystem.fireNote());*/
+
+    userController.a().onTrue(shooterSubsystem.startIntake());
+    userController.y().onTrue(shooterSubsystem.toggleMotors(toggleMotorsStates.disable, toggleMotorsStates.disable));
     userController.x().onTrue(shooterSubsystem.fireNote());
   }
 
