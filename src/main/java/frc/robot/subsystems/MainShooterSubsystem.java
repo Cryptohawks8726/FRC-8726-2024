@@ -3,7 +3,6 @@ package frc.robot.subsystems;
 import java.util.function.BooleanSupplier;
 
 import com.revrobotics.CANSparkMax;
-import com.revrobotics.ColorSensorV3;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkPIDController;
 import com.revrobotics.CANSparkBase.ControlType;
@@ -11,7 +10,6 @@ import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.SparkPIDController.ArbFFUnits;
 
 import edu.wpi.first.wpilibj.DigitalInput;
-import edu.wpi.first.wpilibj.I2C.Port;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -21,7 +19,7 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 
-public class BetaShooterSubsystem extends SubsystemBase implements BooleanSupplier {
+public class MainShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     //Motor Controllers & Motor Encoders For the Conveyor and Flywheel
     private final CANSparkMax conveyorMotor = new CANSparkMax(8, MotorType.kBrushless);
     private final CANSparkMax topFlywheelMotor = new CANSparkMax(11, MotorType.kBrushless);
@@ -55,7 +53,7 @@ public class BetaShooterSubsystem extends SubsystemBase implements BooleanSuppli
     }
 
     //Configures flywheel motors
-    public BetaShooterSubsystem() {
+    public MainShooterSubsystem() {
         //Feedforward configuration
         topPID.setFF(kV);
         bottomPID.setFF(kV);

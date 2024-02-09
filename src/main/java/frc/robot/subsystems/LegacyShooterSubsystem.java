@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 
-public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
+public class LegacyShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     //Motor Controllers & Motor Encoders For the Conveyor and Flywheel
     private final CANSparkMax conveyorMotor = new CANSparkMax(7, MotorType.kBrushless);
     private final CANSparkMax topFlywheelMotor = new CANSparkMax(11, MotorType.kBrushless);
@@ -50,7 +50,7 @@ public class ShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     private ColorSensorV3 noteSensor = new ColorSensorV3(Port.kMXP);
 
     //Configures Flywheel Motors
-    public ShooterSubsystem() {
+    public LegacyShooterSubsystem() {
         topFlywheelMotor.setInverted(false);
         bottomFlywheelMotor.setInverted(true);
         conveyorMotor.setInverted(false);

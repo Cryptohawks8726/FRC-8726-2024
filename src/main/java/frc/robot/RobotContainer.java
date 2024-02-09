@@ -7,13 +7,12 @@ package frc.robot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import frc.robot.subsystems.BetaShooterSubsystem;
-import frc.robot.subsystems.BetaShooterSubsystem.toggleMotorsStates;
-import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.MainShooterSubsystem;
+import frc.robot.subsystems.MainShooterSubsystem.toggleMotorsStates;
 
 public class RobotContainer {
   private CommandXboxController userController = new CommandXboxController(0);
-  private BetaShooterSubsystem shooterSubsystem = new BetaShooterSubsystem();
+  private MainShooterSubsystem shooterSubsystem = new MainShooterSubsystem();
 
   public RobotContainer() {
     configureBindings();
