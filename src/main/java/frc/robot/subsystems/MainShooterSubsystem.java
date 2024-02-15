@@ -22,22 +22,25 @@ import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 public class MainShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     //Motor Controllers & Motor Encoders For the Conveyor and Flywheel
     private final CANSparkMax conveyorMotor = new CANSparkMax(8, MotorType.kBrushless);
-    private final CANSparkMax topFlywheelMotor = new CANSparkMax(11, MotorType.kBrushless);
-    private final CANSparkMax bottomFlywheelMotor = new CANSparkMax(30, MotorType.kBrushless);
-    private final RelativeEncoder conveyorEncoder = conveyorMotor.getEncoder();
+    public final CANSparkMax topFlywheelMotor = new CANSparkMax(11, MotorType.kBrushless);
+    public final CANSparkMax bottomFlywheelMotor = new CANSparkMax(30, MotorType.kBrushless);
     private final RelativeEncoder topFlywheelEncoder = topFlywheelMotor.getEncoder();
     private final RelativeEncoder bottomFlywheelEncoder = bottomFlywheelMotor.getEncoder();
 
     //Conveyor setpoint
-    private final double conveyorSetpoint = 8;
+    private final double conveyorSetpoint = 6;
+
+    private boolean beamBroken = false;
 
     //Feedforward control
-    private double flywheelSetpoint = 1425; //5700 (Motor RMP Maximum)/4 (Gearbox Ratio)
-    private final double kS = 0;
+    private double flywheelSetpoint = 300; //5700 (Motor RMP Maximum)/4 (Gearbox Ratio)
+    private final double kSTop = 0.15;
+    private final double ksBottom = 0.14;
+    private double testSetpoint = 0;
     private final double kV = 12.0/2448;
 
     //Feedback control
-    private final double kP = 0;
+    private final double kP = 1;
     private final double kI = 0;
     private final double kD = 0;
     SparkPIDController topPID = topFlywheelMotor.getPIDController();
@@ -66,44 +69,40 @@ public class MainShooterSubsystem extends SubsystemBase implements BooleanSuppli
         bottomPID.setI(kI);
         bottomPID.setD(kD);
 
-        topFlywheelMotor.setInverted(true);
-        bottomFlywheelMotor.setInverted(false);
+        topFlywheelMotor.setInverted(false);
+        bottomFlywheelMotor.setInverted(true);
         conveyorMotor.setInverted(false);
 
-        conveyorMotor.setSmartCurrentLimit(25);
         topFlywheelMotor.setSmartCurrentLimit(40);
         bottomFlywheelMotor.setSmartCurrentLimit(40);
-
-        
-
-        bottomFlywheelMotor.follow(topFlywheelMotor, true);
+        conveyorMotor.setSmartCurrentLimit(25);
     };
 
     //Implementation of getAsBoolean
     public boolean getAsBoolean() {
-        return beamBreakSensor.get();
-        //return true;
+        return !beamBreakSensor.get();
     }
 
     @Override
     public void periodic() {
         SmartDashboard.putNumber("TOPMOTOR:", topFlywheelEncoder.getVelocity());
         SmartDashboard.putNumber("BOTTOMMOTOR:", bottomFlywheelEncoder.getVelocity());
+        SmartDashboard.putBoolean("BEAMBROKEN", !beamBreakSensor.get());
     }
 
     //Activates the flywheels at a designated speed
-    public InstantCommand startFlywheels(float motorSpeed) {
+    public InstantCommand startFlywheels(double motorSpeed) {
         return new InstantCommand(() -> {
             flywheelSetpoint = motorSpeed;
-            topPID.setReference(flywheelSetpoint, ControlType.kVelocity, 0, kS, ArbFFUnits.kVoltage);
-            bottomPID.setReference(flywheelSetpoint, ControlType.kVelocity, 0, kS, ArbFFUnits.kVoltage);
+            topPID.setReference(flywheelSetpoint, ControlType.kVelocity, 0, kSTop, ArbFFUnits.kVoltage);
+            bottomPID.setReference(flywheelSetpoint, ControlType.kVelocity, 0, ksBottom, ArbFFUnits.kVoltage);
         });
     }
 
     public InstantCommand startFlywheels() {
         return new InstantCommand(() -> {
-            topPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
-            bottomPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
+            topPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kSTop, ArbFFUnits.kVoltage);
+            bottomPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, ksBottom, ArbFFUnits.kVoltage);
         });
     }
 
@@ -112,10 +111,9 @@ public class MainShooterSubsystem extends SubsystemBase implements BooleanSuppli
         return 
             toggleMotors(toggleMotorsStates.disable, toggleMotorsStates.enable)
             .andThen(new WaitUntilCommand(this))
+            .andThen(toggleMotors(toggleMotorsStates.disable, toggleMotorsStates.disable)
             .andThen(new WaitCommand(1))
-            .andThen(startFlywheels())
-            .andThen(toggleMotors(toggleMotorsStates.proceed, toggleMotorsStates.proceed /*toggleMotorsStates.disable*/)
-            );
+            .andThen(startFlywheels()));
     }
 
     public InstantCommand configureSetpoint(int newSetpoint) {
@@ -151,15 +149,22 @@ public class MainShooterSubsystem extends SubsystemBase implements BooleanSuppli
                 conveyorMotor.setVoltage(0);
             }
             if (activateFlywheel == toggleMotorsStates.enable) {
-                topPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
-                bottomPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
+                topPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, kSTop, ArbFFUnits.kVoltage);
+                bottomPID.setReference(flywheelSetpoint, ControlType.kVoltage, 0, ksBottom, ArbFFUnits.kVoltage);
             }
             else if (activateFlywheel == toggleMotorsStates.disable) {
-                topPID.setReference(0, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
-                bottomPID.setReference(0, ControlType.kVoltage, 0, kS, ArbFFUnits.kVoltage);
+                topPID.setReference(0, ControlType.kVoltage, 0, 0, ArbFFUnits.kVoltage);
+                bottomPID.setReference(0, ControlType.kVoltage, 0, 0, ArbFFUnits.kVoltage);
             }
         });
     }
 
+    public Command staticGainTest() {
+        return new InstantCommand(() -> {
+            testSetpoint += 0.01;
+            SmartDashboard.putNumber("test setpoint", testSetpoint);
+            bottomFlywheelMotor.setVoltage(testSetpoint);
+        });
+    }
 }
 
