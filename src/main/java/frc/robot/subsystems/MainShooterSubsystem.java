@@ -22,8 +22,8 @@ import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 public class MainShooterSubsystem extends SubsystemBase implements BooleanSupplier {
     //Motor Controllers & Motor Encoders For the Conveyor and Flywheel
     private final CANSparkMax conveyorMotor = new CANSparkMax(8, MotorType.kBrushless);
-    public final CANSparkMax topFlywheelMotor = new CANSparkMax(11, MotorType.kBrushless);
-    public final CANSparkMax bottomFlywheelMotor = new CANSparkMax(30, MotorType.kBrushless);
+    public final CANSparkMax topFlywheelMotor = new CANSparkMax(62, MotorType.kBrushless);
+    public final CANSparkMax bottomFlywheelMotor = new CANSparkMax(61, MotorType.kBrushless);
     private final RelativeEncoder topFlywheelEncoder = topFlywheelMotor.getEncoder();
     private final RelativeEncoder bottomFlywheelEncoder = bottomFlywheelMotor.getEncoder();
 
