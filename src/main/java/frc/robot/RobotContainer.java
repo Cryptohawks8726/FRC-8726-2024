@@ -26,6 +26,7 @@ public class RobotContainer {
     userController.a().onTrue(shooterSubsystem.startIntake());
     userController.y().onTrue(shooterSubsystem.toggleMotors(toggleMotorsStates.disable, toggleMotorsStates.disable));
     userController.x().onTrue(shooterSubsystem.fireNote());
+    userController.b().onTrue(shooterSubsystem.startFlywheels());
     userController.leftTrigger().onTrue(shooterSubsystem.staticGainTest());
   }
 
