@@ -28,9 +28,7 @@ public class MainShooterSubsystem extends SubsystemBase implements BooleanSuppli
     private final RelativeEncoder bottomFlywheelEncoder = bottomFlywheelMotor.getEncoder();
 
     //Conveyor setpoint
-    private final double conveyorSetpoint = 6;
-
-    private boolean beamBroken = false;
+    private double conveyorSetpoint = 7;
 
     //Feedforward control
     private double flywheelSetpoint = 300; //5700 (Motor RMP Maximum)/4 (Gearbox Ratio)
@@ -49,11 +47,14 @@ public class MainShooterSubsystem extends SubsystemBase implements BooleanSuppli
     //Color sensor
     private DigitalInput beamBreakSensor = new DigitalInput(0);
 
+    //Enum for potential motor states, used when modifying motor states via toggleMotors
     public enum toggleMotorsStates {
         disable,
         enable,
         proceed
     }
+
+    private boolean isShooting = false;
 
     //Configures flywheel motors
     public MainShooterSubsystem() {
@@ -80,14 +81,19 @@ public class MainShooterSubsystem extends SubsystemBase implements BooleanSuppli
 
     //Implementation of getAsBoolean
     public boolean getAsBoolean() {
-        return !beamBreakSensor.get();
+        if (isShooting) {
+            return beamBreakSensor.get();
+        }
+        else {
+            return !beamBreakSensor.get();
+        }
     }
 
     @Override
     public void periodic() {
         SmartDashboard.putNumber("TOPMOTOR:", topFlywheelEncoder.getVelocity());
         SmartDashboard.putNumber("BOTTOMMOTOR:", bottomFlywheelEncoder.getVelocity());
-        SmartDashboard.putBoolean("BEAMBROKEN", !beamBreakSensor.get());
+        SmartDashboard.putBoolean("BEAMBREAKSTATE", getAsBoolean());
     }
 
     //Activates the flywheels at a designated speed
@@ -127,15 +133,24 @@ public class MainShooterSubsystem extends SubsystemBase implements BooleanSuppli
     public Command fireNote() {
         return 
             new InstantCommand(() -> {
-                if (Math.abs(topFlywheelEncoder.getVelocity() - flywheelSetpoint) < 250 && Math.abs(bottomFlywheelEncoder.getVelocity() - flywheelSetpoint) < 250) {
-                    toggleMotors(toggleMotorsStates.proceed, toggleMotorsStates.disable).schedule();
+                if (Math.abs(topFlywheelEncoder.getVelocity() - 5700) < 250 && Math.abs(bottomFlywheelEncoder.getVelocity() - 5700) < 250) {
+                    System.out.println("yeag");
+                    conveyorSetpoint = 12;
+                    isShooting = true;
+                    conveyorMotor.setSmartCurrentLimit(35);
+                    toggleMotors(toggleMotorsStates.proceed, toggleMotorsStates.enable).schedule();
                 }
-                if (true) {
+                else {
                     System.out.println(topFlywheelEncoder.getVelocity());
                     System.out.println(bottomFlywheelEncoder.getVelocity());
                 }
             }, this)
-            .andThen(new WaitCommand(1.5))
+            .andThen(new WaitUntilCommand(this))
+            .andThen(new InstantCommand(() -> {
+                isShooting = false;
+                conveyorSetpoint = 6;
+                conveyorMotor.setSmartCurrentLimit(25);
+            }))
             .andThen(toggleMotors(toggleMotorsStates.disable, toggleMotorsStates.disable))
             .withInterruptBehavior(InterruptionBehavior.kCancelIncoming);
     }
