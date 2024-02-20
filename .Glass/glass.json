@@ -3,9 +3,6 @@
     "Persistent Values": {
       "open": false
     },
-    "Retained Values": {
-      "open": false
-    },
     "transitory": {
       "Shuffleboard": {
         "open": true
@@ -19,13 +16,7 @@
     }
   },
   "NetworkTables Info": {
-    "Clients": {
-      "open": true
-    },
     "Connections": {
-      "open": true
-    },
-    "Server": {
       "open": true
     },
     "glass@1": {
@@ -47,7 +38,7 @@
             0.0,
             0.8500000238418579
           ],
-          "height": 338,
+          "height": 525,
           "series": [
             {
               "color": [
