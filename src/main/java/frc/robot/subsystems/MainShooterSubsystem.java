@@ -9,6 +9,7 @@ import com.revrobotics.SparkPIDController.ArbFFUnits;
 
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
@@ -18,9 +19,9 @@ import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 
 public class MainShooterSubsystem extends SubsystemBase {
     //Motor Controllers & Motor Encoders For the Conveyor and Flywheel
-    private final CANSparkMax conveyorMotor = new CANSparkMax(/*60*/8, MotorType.kBrushless);
-    public final CANSparkMax topFlywheelMotor = new CANSparkMax(/*62*/11, MotorType.kBrushless);
-    public final CANSparkMax bottomFlywheelMotor = new CANSparkMax(/*61*/30, MotorType.kBrushless);
+    private final CANSparkMax conveyorMotor = new CANSparkMax(60, MotorType.kBrushless);
+    public final CANSparkMax topFlywheelMotor = new CANSparkMax(62, MotorType.kBrushless);
+    public final CANSparkMax bottomFlywheelMotor = new CANSparkMax(61, MotorType.kBrushless);
     private final RelativeEncoder topFlywheelEncoder = topFlywheelMotor.getEncoder();
     private final RelativeEncoder bottomFlywheelEncoder = bottomFlywheelMotor.getEncoder();
 
@@ -28,9 +29,9 @@ public class MainShooterSubsystem extends SubsystemBase {
     private double conveyorSetpoint = 7;
 
     //Feedforward control
-    private double flywheelSetpoint = 500; //5700 (Motor RMP Maximum)/4 (Gearbox Ratio)
-    private final double kSTop = 0.2;
-    private final double ksBottom = 0.08;
+    private double flywheelSetpoint = 5700; //5700 (Motor RMP Maximum)/4 (Gearbox Ratio)
+    private final double kSTop = 0.0;
+    private final double ksBottom = 0.0;
     private double testSetpoint = 0;
     private final double kV = 1.0/5700.0;
 
@@ -42,7 +43,7 @@ public class MainShooterSubsystem extends SubsystemBase {
     SparkPIDController bottomPID = bottomFlywheelMotor.getPIDController();
 
     //Color sensor
-    private DigitalInput beamBreakSensor = new DigitalInput(0);
+    private DigitalInput beamBreakSensor = new DigitalInput(3);
 
     //Enum for potential motor states, used when modifying motor states via toggleMotors
     public enum toggleMotorsStates {
@@ -97,18 +98,12 @@ public class MainShooterSubsystem extends SubsystemBase {
         });
     }
 
-    public InstantCommand startFlywheels() {
-        return new InstantCommand(() -> {
-            topPID.setReference(flywheelSetpoint, ControlType.kVelocity, 0, kSTop, ArbFFUnits.kVoltage);
-            bottomPID.setReference(flywheelSetpoint, ControlType.kVelocity, 0, ksBottom, ArbFFUnits.kVoltage);
-        });
-    }
-
     //SequentialCommandGroup which activates the intake and activates the flywheel motors once a ring is detected.
     public SequentialCommandGroup startIntake() {
         return 
             toggleMotors(toggleMotorsStates.proceed, toggleMotorsStates.enable)
             .andThen(new WaitUntilCommand(() -> !beamBreakSensor.get()))
+            .andThen(new WaitCommand(0.0625))
             .andThen(toggleMotors(toggleMotorsStates.disable, toggleMotorsStates.disable));
     }
 
@@ -120,10 +115,10 @@ public class MainShooterSubsystem extends SubsystemBase {
 
     //InstantCommand which activates the index's conveyor belt, transporting a held ring to the flywheel and firing it
     //Only fires if the flywheel is up to speed
-    public Command fireNote() {
+    public Command fireNote(boolean isAmp) {
         return 
-            startFlywheels()
-            .andThen(new WaitUntilCommand(() -> Math.abs(topFlywheelEncoder.getVelocity() - 5700) < 250 && Math.abs(bottomFlywheelEncoder.getVelocity() - 5700) < 25))
+            startFlywheels(isAmp ? 1000.0 : 5700.0)
+            .andThen(new WaitUntilCommand(() -> Math.abs(topFlywheelEncoder.getVelocity() - flywheelSetpoint) < 500 && Math.abs(bottomFlywheelEncoder.getVelocity() - flywheelSetpoint) < 500))
             .andThen(new InstantCommand(() -> {
                 conveyorSetpoint = 12;
                 conveyorMotor.setSmartCurrentLimit(35);
@@ -153,8 +148,8 @@ public class MainShooterSubsystem extends SubsystemBase {
                 bottomPID.setReference(flywheelSetpoint, ControlType.kVelocity, 0, ksBottom, ArbFFUnits.kVoltage);
             }
             else if (activateFlywheel == toggleMotorsStates.disable) {
-                topPID.setReference(0, ControlType.kVelocity, 0, 0, ArbFFUnits.kVoltage);
-                bottomPID.setReference(0, ControlType.kVelocity, 0, 0, ArbFFUnits.kVoltage);
+                topPID.setReference(0, ControlType.kVoltage, 0, 0, ArbFFUnits.kVoltage);
+                bottomPID.setReference(0, ControlType.kVoltage, 0, 0, ArbFFUnits.kVoltage);
             }
         });
     }
