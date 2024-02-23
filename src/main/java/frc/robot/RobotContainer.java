@@ -19,9 +19,6 @@ public class RobotContainer {
   }
 
   private void configureBindings() {
-    /*userController.a().onTrue(shooterSubsystem.startIntake());
-    userController.y().onTrue(shooterSubsystem.stopMotors(true, true));
-    userController.x().onTrue(shooterSubsystem.fireNote());*/
 
     userController.a().onTrue(shooterSubsystem.startIntake());
     userController.y().onTrue(shooterSubsystem.toggleMotors(toggleMotorsStates.disable, toggleMotorsStates.disable));
