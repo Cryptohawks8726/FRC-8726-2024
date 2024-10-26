@@ -13,9 +13,9 @@ public class Limelights extends SubsystemBase {
     public boolean blueOrigin = true;
     public Pose2d robotPose;
 
-    ProfiledPIDController xCont = new ProfiledPIDController(); //will add in parameters l8r
-    ProfiledPIDController yCont = new ProfiledPIDController();
-    ProfiledPIDController omegaCont = new ProfiledPIDController();
+    ProfiledPIDController xCont = new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0)); //will add in parameters l8r
+    ProfiledPIDController yCont = new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
+    ProfiledPIDController omegaCont = new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
 
     public Limelights() {
         table = NetworkTableInstance.getDefault().getTable("limelight");
@@ -65,11 +65,22 @@ public class Limelights extends SubsystemBase {
         Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d();
         Pose2d botPose = LimelightHelpers.getBotPose2d("limelight");
         Pose2d tagPose = LimelightHelpers.getTargetPose_RobotSpace2D("limelight");
-        Pose2d goalPose = botPose.transformBy(botToTagOffset);
+        Pose2d goalPose = tagPose.transformBy(botToTagOffset);
 
         xCont.setGoal(goalPose.getX());
         yCont.setGoal(goalPose.getY());
         omegaCont.setGoal(goalPose.getRotation().getRadians);
+
+        return new ChassisSpeeds(xCont.calculate(botPose.getX()), yCont.calculate(botPose.getY()), omegaCont.calculate(botPose.getRotation.getRadians())));
+    }
+
+    public ChassisSpeeds getPoseSpeeds(Pose2d desiredPose) {
+        Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d();
+        Pose2d botPose = LimelightHelpers.getBotPose2d("limelight");
+
+        xCont.setGoal(desiredPose.getX());
+        yCont.setGoal(desiredPose.getY());
+        omegaCont.setGoal(desiredPose.getRotation().getRadians);
 
         return new ChassisSpeeds(xCont.calculate(botPose.getX()), yCont.calculate(botPose.getY()), omegaCont.calculate(botPose.getRotation.getRadians())));
     }
