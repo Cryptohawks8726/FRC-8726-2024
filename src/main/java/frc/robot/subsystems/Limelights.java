@@ -13,6 +13,10 @@ public class Limelights extends SubsystemBase {
     public boolean blueOrigin = true;
     public Pose2d robotPose;
 
+    ProfiledPIDController xCont = new ProfiledPIDController(); //will add in parameters l8r
+    ProfiledPIDController yCont = new ProfiledPIDController();
+    ProfiledPIDController omegaCont = new ProfiledPIDController();
+
     public Limelights() {
         table = NetworkTableInstance.getDefault().getTable("limelight");
         LimelightHelpers.setCameraPose_RobotSpace(getName(), 0.3, 0, 0, 0, 40, 0);
@@ -57,6 +61,18 @@ public class Limelights extends SubsystemBase {
         return robotPose;
     }
 
+    public ChassisSpeeds getTagTrackingSpeeds(double desiredDistance) {
+        Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d();
+        Pose2d botPose = LimelightHelpers.getBotPose2d("limelight");
+        Pose2d tagPose = LimelightHelpers.getTargetPose_RobotSpace2D("limelight");
+        Pose2d goalPose = botPose.transformBy(botToTagOffset);
+
+        xCont.setGoal(goalPose.getX());
+        yCont.setGoal(goalPose.getY());
+        omegaCont.setGoal(goalPose.getRotation().getRadians);
+
+        return new ChassisSpeeds(xCont.calculate(botPose.getX()), yCont.calculate(botPose.getY()), omegaCont.calculate(botPose.getRotation.getRadians())));
+    }
 }
 
 
