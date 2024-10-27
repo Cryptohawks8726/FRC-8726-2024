@@ -36,9 +36,6 @@ public class RobotContainer {
     private final GenericHID driverControllerHID;
     private final SwerveDrive drivetrain;
     private final SendableChooser<String> autoChooser;
-    private final ShooterSubsystem shooter;
-    private final ClimberSubsystem climber;
-    private final ArmSubsystem arm;
     private final PowerDistribution pdh;
     private boolean allowRumble;
 
@@ -46,9 +43,6 @@ public class RobotContainer {
 
       Unmanaged.setPhoenixDiagnosticsStartTime(-1);
       drivetrain = new SwerveDrive();
-      shooter = new ShooterSubsystem();
-      climber = new ClimberSubsystem();
-      arm = new ArmSubsystem();
       pdh = new PowerDistribution();
       pdh.setSwitchableChannel(true);
       
@@ -71,52 +65,12 @@ public class RobotContainer {
       configureBindings();
 
       SmartDashboard.putData("Auto Chooser", autoChooser);
-
-      NamedCommands.registerCommand("ShootFirstNote", arm.rotateToState(Arm.tempShootState).andThen(shooter.fireNote(false)).andThen(arm.rotateToState(Arm.intakeState))); //shooter.fireNote(false) without remy
-      NamedCommands.registerCommand("IntakeNoteCmd0", shooter.startIntake());
-      NamedCommands.registerCommand("IntakeNoteCmd3", 
-        shooter.startIntake().andThen(arm.rotateToState(Arm.driveState)));
-      NamedCommands.registerCommand("ShootSecondNote", arm.rotateToState(Arm.tempShootState).andThen(shooter.fireNote(false)));
-      NamedCommands.registerCommand("ShootThirdNote", arm.rotateToState(new State(Math.toRadians(7.5), 0)).andThen(shooter.fireNote(false)));
-      
     }
 
     private void configureBindings() {
 
       drivetrain.setDefaultCommand(new ActualXboxTeleopDrive(drivetrain,driverController).withInterruptBehavior(InterruptionBehavior.kCancelSelf));
       driverController.start().onTrue(drivetrain.resetGyroAngle().withName("Gyro angle reset"));
-      
-      operatorController.leftTrigger()
-          .onTrue(
-            new ConditionalCommand(
-                  arm.rotateToState(Arm.tempIntakeState),
-                  new PrintCommand("Arm not lowered for intake"),
-                  () -> arm.getArmDeg() < 40)
-          .alongWith(shooter.startIntake()))
-      .onFalse(shooter.stopShooter().alongWith(arm.rotateToState(Arm.driveState))); //stopShooter isn't functional atm
-      operatorController.rightTrigger()
-          .onTrue(
-              new ConditionalCommand(
-                  new PrintCommand("Already at angle"),
-                  arm.rotateToState(Arm.tempShootState),
-                  () -> arm.getArmDeg() > 40) // This checks if the Arm is likely going for the amp
-          .andThen(shooter.fireNote(arm.getArmDeg()>40)))
-          .onFalse(shooter.stopShooter().alongWith(arm.rotateToState(Arm.tempIntakeState)));
-      if (Constants.disableBeamBreaks) operatorController.leftBumper().onTrue(shooter.demoPullBackNote()).onFalse(shooter.stopShooter());
-      else operatorController.leftBumper().onTrue(shooter.pullBackNote());
-      //operatorController.povUp().onTrue(shooter.pullBackNote());
-      operatorController.rightBumper().onTrue(shooter.stopShooter());
-      operatorController.a().onTrue(arm.rotateToState(Arm.tempIntakeState));
-      operatorController.b().onTrue(arm.rotateToState(Arm.ampState));
-      //operatorController.y().onTrue(arm.rotateToState(Arm.sourceState));
-      //operatorController.x().onTrue(arm.rotateToState(Arm.podiumState));
-      operatorController.back().onTrue(climber.smartReleaseClimber());
-      operatorController.start().onTrue(climber.smartClimb());
-      /*shooter.hasNote()
-        .onTrue(new InstantCommand(()->setControllerRumble(0.5)))
-        .onFalse(new InstantCommand(()->setControllerRumble(0)));
-      */
-      //shooter.noteReady()
     }
 
     public Command getAutonomousCommand() {
@@ -134,7 +88,7 @@ public class RobotContainer {
           return AutoBuilder.buildAuto("3NoteRightAuto");
         }else if(autoChooser.getSelected().equals("3NoteLeftAuto")){
           return AutoBuilder.buildAuto("3NoteLeftAuto");
-        }else {
+        } else {
           return shooter.fireNote(false); // default path to do if nothing is selected
         }
       }else{

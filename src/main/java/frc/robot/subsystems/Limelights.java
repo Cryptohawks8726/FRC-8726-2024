@@ -3,10 +3,28 @@ package frc.robot.subsystems;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.LimelightHelpers;
+import frc.robot.LimelightHelpers.LimelightTarget_Fiducial;
+import frc.robot.LimelightHelpers.LimelightTarget_Retro;
 import edu.wpi.first.networktables.NetworkTable;
 import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Transform2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.math.trajectory.TrapezoidProfile;
+
 
 public class Limelights extends SubsystemBase {
     NetworkTable table;
@@ -62,27 +80,27 @@ public class Limelights extends SubsystemBase {
     }
 
     public ChassisSpeeds getTagTrackingSpeeds(double desiredDistance) {
-        Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d();
-        Pose2d botPose = LimelightHelpers.getBotPose2d("limelight");
-        Pose2d tagPose = LimelightHelpers.getTargetPose_RobotSpace2D("limelight");
+        Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d());
+        Pose2d botPose = LimelightHelpers.getBotPose2d_wpiBlue("limelight");
+        Pose2d tagPose = LimelightHelpers.LimelightTarget_Retro;
         Pose2d goalPose = tagPose.transformBy(botToTagOffset);
 
         xCont.setGoal(goalPose.getX());
         yCont.setGoal(goalPose.getY());
-        omegaCont.setGoal(goalPose.getRotation().getRadians);
+        omegaCont.setGoal(goalPose.getRotation().getRadians());
 
-        return new ChassisSpeeds(xCont.calculate(botPose.getX()), yCont.calculate(botPose.getY()), omegaCont.calculate(botPose.getRotation.getRadians())));
+        return new ChassisSpeeds(xCont.calculate(botPose.getX()), yCont.calculate(botPose.getY()), omegaCont.calculate(botPose.getRotation().getRadians()));
     }
 
-    public ChassisSpeeds getPoseSpeeds(Pose2d desiredPose) {
-        Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d();
-        Pose2d botPose = LimelightHelpers.getBotPose2d("limelight");
+    public ChassisSpeeds getSpeedsForPose(Pose2d desiredPose) {
+        Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d());
+        Pose2d botPose = LimelightHelpers.getBotPose2d_wpiBlue("limelight");
 
         xCont.setGoal(desiredPose.getX());
         yCont.setGoal(desiredPose.getY());
-        omegaCont.setGoal(desiredPose.getRotation().getRadians);
+        omegaCont.setGoal(desiredPose.getRotation().getRadians());
 
-        return new ChassisSpeeds(xCont.calculate(botPose.getX()), yCont.calculate(botPose.getY()), omegaCont.calculate(botPose.getRotation.getRadians())));
+        return new ChassisSpeeds(xCont.calculate(botPose.getX()), yCont.calculate(botPose.getY()), omegaCont.calculate(botPose.getRotation().getRadians()));
     }
 }
 
