@@ -6,75 +6,159 @@ package frc.robot;
 
 import com.ctre.phoenix6.unmanaged.Unmanaged;
 import com.pathplanner.lib.auto.AutoBuilder;
-import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.auto.NamedCommands;
 
-import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.State;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
-import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.PowerDistribution;
+import edu.wpi.first.wpilibj.RuntimeType;
+import edu.wpi.first.wpilibj.GenericHID.RumbleType;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.ConditionalCommand;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
+import edu.wpi.first.wpilibj2.command.WrapperCommand;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import frc.robot.Constants.Arm;
+import frc.robot.Constants.Shooter;
 import frc.robot.commands.ActualXboxTeleopDrive;
 import frc.robot.subsystems.SwerveDrive;
+import frc.robot.subsystems.ClimberSubsystem;
+import frc.robot.subsystems.ShooterSubsystem;
+import frc.robot.subsystems.ArmSubsystem;
 
-import frc.robot.subsystems.Limelights;
 
 public class RobotContainer {
 
-  private final SwerveDrive drivetrain;
-  private final CommandXboxController driverController;
-  private final Limelights limelights;
+    private final CommandXboxController driverController;
+    private final CommandXboxController operatorController;
+    private final GenericHID operatorControllerHID;
+    private final GenericHID driverControllerHID;
+    private final SwerveDrive drivetrain;
+    private final SendableChooser<String> autoChooser;
+    private final ShooterSubsystem shooter;
+    private final ClimberSubsystem climber;
+    private final ArmSubsystem arm;
+    private final PowerDistribution pdh;
+    private boolean allowRumble;
 
-  public RobotContainer() {
+    public RobotContainer() {
 
-    Unmanaged.setPhoenixDiagnosticsStartTime(-1);
-    drivetrain = new SwerveDrive();
-    driverController = new CommandXboxController(0);
+      Unmanaged.setPhoenixDiagnosticsStartTime(-1);
+      drivetrain = new SwerveDrive();
+      shooter = new ShooterSubsystem();
+      climber = new ClimberSubsystem();
+      arm = new ArmSubsystem();
+      pdh = new PowerDistribution();
+      pdh.setSwitchableChannel(true);
+      
+      driverController = new CommandXboxController(0);
+      operatorController = new CommandXboxController(1);
+      operatorControllerHID = operatorController.getHID();
+      driverControllerHID = driverController.getHID();
 
-    limelights = new Limelights();
+      //autoChooser = AutoBuilder.buildAutoChooser();
+      autoChooser = new SendableChooser<String>();
+      autoChooser.setDefaultOption("2NoteCenterAuto","2NoteCenterAuto");
+      autoChooser.addOption("2NoteAmpSideAuto","2NoteAmpSideAuto");
+      autoChooser.addOption("2NoteSourceSideAuto","2NoteSourceSideAuto");
+      autoChooser.addOption("3NoteRightAuto", "3NoteRightAuto");
+      autoChooser.addOption("3NoteLeftAuto", "3NoteLeftAuto");
+      //autoChooser.addOption("AmpSideBlank", "AmpSideBlank");
+      //autoChooser.addOption("SourceSideBlank", "SourceSideBlank");
+      //autoChooser.addOption("CenterBlank", "CenterBlank");
 
-    configureButtonBindings();
+      configureBindings();
+
+      SmartDashboard.putData("Auto Chooser", autoChooser);
+
+      NamedCommands.registerCommand("ShootFirstNote", arm.rotateToState(Arm.tempShootState).andThen(shooter.fireNote(false)).andThen(arm.rotateToState(Arm.intakeState))); //shooter.fireNote(false) without remy
+      NamedCommands.registerCommand("IntakeNoteCmd0", shooter.startIntake());
+      NamedCommands.registerCommand("IntakeNoteCmd3", 
+        shooter.startIntake().andThen(arm.rotateToState(Arm.driveState)));
+      NamedCommands.registerCommand("ShootSecondNote", arm.rotateToState(Arm.tempShootState).andThen(shooter.fireNote(false)));
+      NamedCommands.registerCommand("ShootThirdNote", arm.rotateToState(new State(Math.toRadians(7.5), 0)).andThen(shooter.fireNote(false)));
+      
+    }
+
+    private void configureBindings() {
+
+      drivetrain.setDefaultCommand(new ActualXboxTeleopDrive(drivetrain,driverController).withInterruptBehavior(InterruptionBehavior.kCancelSelf));
+      driverController.start().onTrue(drivetrain.resetGyroAngle().withName("Gyro angle reset"));
+      
+      operatorController.leftTrigger()
+          .onTrue(
+            new ConditionalCommand(
+                  arm.rotateToState(Arm.tempIntakeState),
+                  new PrintCommand("Arm not lowered for intake"),
+                  () -> arm.getArmDeg() < 40)
+          .alongWith(shooter.startIntake()))
+      .onFalse(shooter.stopShooter().alongWith(arm.rotateToState(Arm.driveState))); //stopShooter isn't functional atm
+      operatorController.rightTrigger()
+          .onTrue(
+              new ConditionalCommand(
+                  new PrintCommand("Already at angle"),
+                  arm.rotateToState(Arm.tempShootState),
+                  () -> arm.getArmDeg() > 40) // This checks if the Arm is likely going for the amp
+          .andThen(shooter.fireNote(arm.getArmDeg()>40)))
+          .onFalse(shooter.stopShooter().alongWith(arm.rotateToState(Arm.tempIntakeState)));
+      if (Constants.disableBeamBreaks) operatorController.leftBumper().onTrue(shooter.demoPullBackNote()).onFalse(shooter.stopShooter());
+      else operatorController.leftBumper().onTrue(shooter.pullBackNote());
+      //operatorController.povUp().onTrue(shooter.pullBackNote());
+      operatorController.rightBumper().onTrue(shooter.stopShooter());
+      operatorController.a().onTrue(arm.rotateToState(Arm.tempIntakeState));
+      operatorController.b().onTrue(arm.rotateToState(Arm.ampState));
+      //operatorController.y().onTrue(arm.rotateToState(Arm.sourceState));
+      //operatorController.x().onTrue(arm.rotateToState(Arm.podiumState));
+      operatorController.back().onTrue(climber.smartReleaseClimber());
+      operatorController.start().onTrue(climber.smartClimb());
+      /*shooter.hasNote()
+        .onTrue(new InstantCommand(()->setControllerRumble(0.5)))
+        .onFalse(new InstantCommand(()->setControllerRumble(0)));
+      */
+      //shooter.noteReady()
+    }
+
+    public Command getAutonomousCommand() {
+      if(!Constants.demoMode){
+      System.out.println("Starting auto");
+
+      if (autoChooser.getSelected() != null) {
+        if (autoChooser.getSelected().equals("2NoteCenterAuto")) {
+          return AutoBuilder.buildAuto("2NoteCenterAuto");
+        } else if (autoChooser.getSelected().equals("2NoteSourceSideAuto")) {
+          return AutoBuilder.buildAuto("2NoteLeftAuto");
+        } else if (autoChooser.getSelected().equals("2NoteAmpSideAuto")) {
+          return AutoBuilder.buildAuto("2NoteRightAuto");
+        } else if(autoChooser.getSelected().equals("3NoteRightAuto")){
+          return AutoBuilder.buildAuto("3NoteRightAuto");
+        }else if(autoChooser.getSelected().equals("3NoteLeftAuto")){
+          return AutoBuilder.buildAuto("3NoteLeftAuto");
+        }else {
+          return shooter.fireNote(false); // default path to do if nothing is selected
+        }
+      }else{
+        return null;
+      }
+      
+      
+
+    } else{ return null;}
+
   }
 
-  /**
-   * Use this method to define your button->command mappings. Buttons can be created by
-   * instantiating a {@link GenericHID} or one of its subclasses ({@link
-   * edu.wpi.first.wpilibj.Joystick} or {@link XboxController}), and then passing it to a {@link
-   * edu.wpi.first.wpilibj2.command.button.JoystickButton}.
-   */
-  private void configureButtonBindings() {
-    drivetrain.setDefaultCommand(new ActualXboxTeleopDrive(drivetrain,driverController).withInterruptBehavior(InterruptionBehavior.kCancelSelf));
-    
-    driverController.a().onTrue(drivetrain.resetGyroAngle());
-    driverController.rightBumper().whileTrue(drivetrain.passiveBrake());
+  public void setControllerRumble(double rumble){
+    if(DriverStation.isTeleopEnabled()){
+      operatorControllerHID.setRumble(RumbleType.kBothRumble, rumble);
+      driverControllerHID.setRumble(RumbleType.kBothRumble, rumble);
+    }else{
+      operatorControllerHID.setRumble(RumbleType.kBothRumble, 0);
+      driverControllerHID.setRumble(RumbleType.kBothRumble, 0);
+    }
   }
-
-  /**
-   * Use this to pass the autonomous command to the main {@link Robot} class.
-   *
-   * @return the command to run in autonomous
-   */
-  public Command getAutonomousCommand() {
-    return null;
-    /* TODO: uncomment
-    if(!Constants.demoMode){
-    // An ExampleCommand will run in autonomou`s
-    PathPlannerPath path = PathPlannerPath.fromPathFile("Test1");
-
-    // Create a path following command using AutoBuilder. This will also trigger event markers.
-
-    SmartDashboard.putNumber("e", 1);
-    //drivetrain.setOdometryPosition(new Pose2d(2.659489631652832, 7.026157379150391, new Rotation2d(0))); TODO: uncomment
-    //SmartDashboard.putNumber("Gyro angle:", drivetrain.getRobotAngle().getDegrees()%360); TODO: uncomment
-    PathPlannerPath exampleChoreoTraj = PathPlannerPath.fromChoreoTrajectory("Path4");
-    
-    return AutoBuilder.followPath(exampleChoreoTraj);
-    //return new InstantCommand(()->drivetrain.drive(new ChassisSpeeds(1, 0, 0.1), false),drivetrain)
-    //.andThen(new WaitCommand(5))
-    //.andThen(()->drivetrain.drive(new ChassisSpeeds(0, 0, 0), false),drivetrain);
-  } else{ return null;}
-  */
-}
+  
 }

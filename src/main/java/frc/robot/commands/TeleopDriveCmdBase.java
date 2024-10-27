@@ -39,11 +39,11 @@ public abstract class TeleopDriveCmdBase extends CommandBase {
     if (isHeadingSet == false){
       headingPID.reset();
       isHeadingSet = true;
-      lastHeading = drivetrain.gyro.getYaw()+180%360;
+      lastHeading = (drivetrain.gyro.getYaw().getValue())+180%360;
       headingPID.setSetpoint(lastHeading);
-      return headingPID.calculate(drivetrain.gyro.getYaw()+180%360);
+      return headingPID.calculate(drivetrain.gyro.getYaw().getValue()+180%360);
    }else{
-      return headingPID.calculate(drivetrain.gyro.getYaw()+180%360);
+      return headingPID.calculate(drivetrain.gyro.getYaw().getValue()+180%360);
    }
   }
 
@@ -51,6 +51,7 @@ public abstract class TeleopDriveCmdBase extends CommandBase {
   public void initialize() {
     isHeadingSet = false;
     headingPID.reset();
+    
   }
 
   @Override

@@ -1,0 +1,61 @@
+{
+  "version": 1.0,
+  "startingPose": {
+    "position": {
+      "x": 1.3604378700256348,
+      "y": 5.526217937469482
+    },
+    "rotation": 0.0
+  },
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootFirstNote"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "4NoteAuto1.1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootSecondNote"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "4NoteAuto2.1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootSecondNote"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "4NoteAuto3.1"
+          }
+        },
+        {
+          "type": "named",
+          "data": {
+            "name": "ShootFourthNote"
+          }
+        }
+      ]
+    }
+  },
+  "folder": null,
+  "choreoAuto": true
+}

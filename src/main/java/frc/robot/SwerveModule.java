@@ -55,8 +55,8 @@ public class SwerveModule{
         driveMotor.restoreFactoryDefaults();
         steerMotor.restoreFactoryDefaults();
         
-        driveMotor.setIdleMode(IdleMode.kCoast);
-        steerMotor.setIdleMode(IdleMode.kCoast);
+        driveMotor.setIdleMode(IdleMode.kBrake);
+        steerMotor.setIdleMode(IdleMode.kBrake);
         
         //lower later
         driveMotor.setSmartCurrentLimit(Constants.Swerve.driveMotorStallCurrentLimit,Constants.Swerve.driveMotorFreeCurrentLimit); 
@@ -84,6 +84,7 @@ public class SwerveModule{
         //steerController.setPositionPIDWrappingMinInput(0);
         //steerController.setP(Constants.Swerve.kSteerP);
         contSteerController = new PIDController(Constants.Swerve.kSteerP, Constants.Swerve.kSteerI, Constants.Swerve.kSteerD);
+        //set the reference angle of pid to the current module angle.
         contSteerController.enableContinuousInput(0, 360);
 
         driveController.setP(Constants.Swerve.kDriveP,0);
@@ -136,6 +137,10 @@ public class SwerveModule{
         return driveMotor.getOutputCurrent();
     }
 
+    public double getOutput(){
+        return driveMotor.getAppliedOutput();
+    }
+
     public Transform2d getCenterTransform(){
         return transformationFromCenter;
     }
@@ -178,6 +183,7 @@ public class SwerveModule{
     
     public void updateSteerPid(){
         steerMotor.set(contSteerController.calculate(getAngle()));
+        
     }
     
     public double getAngle(){

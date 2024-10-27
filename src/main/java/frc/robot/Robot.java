@@ -4,22 +4,32 @@
 
 package frc.robot;
 
+import edu.wpi.first.util.datalog.StringLogEntry;
+import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.subsystems.ArmSubsystem;
 public class Robot extends TimedRobot {
   private Command m_autonomousCommand;
 
   private RobotContainer m_robotContainer;
+  private StringLogEntry commandInitLog;
 
   @Override
   public void robotInit() {
     m_robotContainer = new RobotContainer();
+    DataLogManager.start();
+    DriverStation.startDataLog(DataLogManager.getLog());
+    commandInitLog = new StringLogEntry(DataLogManager.getLog(), "CommandInitList");
+    ArmSubsystem.initArmSetpoint();
   }
 
   @Override
   public void robotPeriodic() {
     CommandScheduler.getInstance().run();
+    CommandScheduler.getInstance().onCommandInitialize(command->commandInitLog.append(command.getName()));
   }
 
   @Override
@@ -33,6 +43,7 @@ public class Robot extends TimedRobot {
 
   @Override
   public void autonomousInit() {
+    
     m_autonomousCommand = m_robotContainer.getAutonomousCommand();
 
     if (m_autonomousCommand != null) {
@@ -44,13 +55,16 @@ public class Robot extends TimedRobot {
   public void autonomousPeriodic() {}
 
   @Override
-  public void autonomousExit() {}
+  public void autonomousExit() {
+    
+  }
 
   @Override
   public void teleopInit() {
     if (m_autonomousCommand != null) {
       m_autonomousCommand.cancel();
     }
+    //ArmSubsystem.initArmSetpoint();
   }
 
   @Override
