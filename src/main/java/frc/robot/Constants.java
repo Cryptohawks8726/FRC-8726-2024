@@ -28,7 +28,7 @@ public final class Constants {
 
     public static final boolean disableBeamBreaks = false; 
     public static final boolean demoMode = false;
-    public static final DriveBase driveBase = DriveBase.Comp2024;
+    public static final DriveBase driveBase = DriveBase.PracticeBot;
     public static final autoPath path = autoPath.twoRingAutoMid;
     public static final class Swerve {
         

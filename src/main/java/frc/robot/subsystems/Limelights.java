@@ -1,7 +1,12 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.PrintCommand;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.WaitCommand;
+import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
 import frc.robot.LimelightHelpers;
 import frc.robot.LimelightHelpers.LimelightTarget_Fiducial;
 import frc.robot.LimelightHelpers.LimelightTarget_Retro;
@@ -31,13 +36,13 @@ public class Limelights extends SubsystemBase {
     public boolean blueOrigin = true;
     public Pose2d robotPose;
 
-    ProfiledPIDController xCont = new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0)); //will add in parameters l8r
-    ProfiledPIDController yCont = new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
-    ProfiledPIDController omegaCont = new ProfiledPIDController(0.0, 0.0, 0.0, new TrapezoidProfile.Constraints(0.0, 0.0));
+    ProfiledPIDController xCont = new ProfiledPIDController(1.25, 0.0, 0.0, new TrapezoidProfile.Constraints(1, 1)); //will add in parameters l8r
+    ProfiledPIDController yCont = new ProfiledPIDController(1.25, 0.0, 0.0, new TrapezoidProfile.Constraints(1, 1));
+    ProfiledPIDController omegaCont = new ProfiledPIDController(1.5, 0.0, 0.0, new TrapezoidProfile.Constraints(1, 1));
 
     public Limelights() {
         table = NetworkTableInstance.getDefault().getTable("limelight");
-        LimelightHelpers.setCameraPose_RobotSpace(getName(), 0.3, 0, 0, 0, 40, 0);
+        LimelightHelpers.setCameraPose_RobotSpace(getName(), 0.3, 0, 0, 0, 30, 0);
     }
 
     @Override
@@ -79,21 +84,22 @@ public class Limelights extends SubsystemBase {
         return robotPose;
     }
 
-    public ChassisSpeeds getTagTrackingSpeeds(double desiredDistance) {
+    public ChassisSpeeds trackTag(double desiredDistance) {
         Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d());
         Pose2d botPose = LimelightHelpers.getBotPose2d_wpiBlue("limelight");
-        Pose2d tagPose = LimelightHelpers.LimelightTarget_Retro;
-        Pose2d goalPose = tagPose.transformBy(botToTagOffset);
+        Pose2d goalPose = botPose.transformBy(LimelightHelpers.getTargetPose3d_RobotSpace("limelight").toPose2d().toTrans);
+
 
         xCont.setGoal(goalPose.getX());
         yCont.setGoal(goalPose.getY());
         omegaCont.setGoal(goalPose.getRotation().getRadians());
 
+        SmartDashboard.putBoolean("COMMAND EXECUTED", true);
+
         return new ChassisSpeeds(xCont.calculate(botPose.getX()), yCont.calculate(botPose.getY()), omegaCont.calculate(botPose.getRotation().getRadians()));
     }
 
     public ChassisSpeeds getSpeedsForPose(Pose2d desiredPose) {
-        Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d());
         Pose2d botPose = LimelightHelpers.getBotPose2d_wpiBlue("limelight");
 
         xCont.setGoal(desiredPose.getX());

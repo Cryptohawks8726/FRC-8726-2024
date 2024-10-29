@@ -13,6 +13,7 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.GenericHID;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.RuntimeType;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.GenericHID.RumbleType;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -20,21 +21,25 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.ConditionalCommand;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.PrintCommand;
+import edu.wpi.first.wpilibj2.command.RepeatCommand;
 import edu.wpi.first.wpilibj2.command.WrapperCommand;
 import edu.wpi.first.wpilibj2.command.Command.InterruptionBehavior;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.Arm;
 import frc.robot.Constants.Shooter;
 import frc.robot.commands.ActualXboxTeleopDrive;
+import frc.robot.subsystems.Limelights;
 import frc.robot.subsystems.SwerveDrive;
 
 public class RobotContainer {
 
     private final CommandXboxController driverController;
+    private final XboxController driverControllerBool;
     private final CommandXboxController operatorController;
     private final GenericHID operatorControllerHID;
     private final GenericHID driverControllerHID;
     private final SwerveDrive drivetrain;
+    private final Limelights limelight;
     private final SendableChooser<String> autoChooser;
     private final PowerDistribution pdh;
     private boolean allowRumble;
@@ -47,10 +52,12 @@ public class RobotContainer {
       pdh.setSwitchableChannel(true);
       
       driverController = new CommandXboxController(0);
+      driverControllerBool = new XboxController(0);
       operatorController = new CommandXboxController(1);
       operatorControllerHID = operatorController.getHID();
       driverControllerHID = driverController.getHID();
 
+      limelight = new Limelights();
       //autoChooser = AutoBuilder.buildAutoChooser();
       autoChooser = new SendableChooser<String>();
       autoChooser.setDefaultOption("2NoteCenterAuto","2NoteCenterAuto");
@@ -68,8 +75,7 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
-
-      drivetrain.setDefaultCommand(new ActualXboxTeleopDrive(drivetrain,driverController).withInterruptBehavior(InterruptionBehavior.kCancelSelf));
+      drivetrain.setDefaultCommand(new ActualXboxTeleopDrive(drivetrain, driverController, limelight).withInterruptBehavior(InterruptionBehavior.kCancelSelf));
       driverController.start().onTrue(drivetrain.resetGyroAngle().withName("Gyro angle reset"));
     }
 
@@ -89,7 +95,7 @@ public class RobotContainer {
         }else if(autoChooser.getSelected().equals("3NoteLeftAuto")){
           return AutoBuilder.buildAuto("3NoteLeftAuto");
         } else {
-          return shooter.fireNote(false); // default path to do if nothing is selected
+          return new PrintCommand("big bingus"); // default path to do if nothing is selected
         }
       }else{
         return null;

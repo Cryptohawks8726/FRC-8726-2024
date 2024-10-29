@@ -1,33 +1,41 @@
 package frc.robot.commands;
 
+import java.util.Random;
+
 import com.pathplanner.lib.commands.PathPlannerAuto;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.XboxController;
 import edu.wpi.first.wpilibj.internal.DriverStationModeThread;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants.Swerve;
+import frc.robot.subsystems.Limelights;
 import frc.robot.subsystems.SwerveDrive;
 
 public class ActualXboxTeleopDrive extends Command {
     private CommandXboxController controller;
+    private final XboxController driverControllerBool;
     private SwerveDrive drivetrain;
     private double lastHeading;
     private boolean isHeadingSet;
     private PIDController headingPID;
     private double translationalSpeed,thetaSpeed;
     private int inversion;
+    private Limelights limelight;
     
-    public ActualXboxTeleopDrive(SwerveDrive drivetrain, CommandXboxController controller){
+    public ActualXboxTeleopDrive(SwerveDrive drivetrain, CommandXboxController controller, Limelights newLimelight){
         this.drivetrain = drivetrain;
         this.controller = controller;
         addRequirements(drivetrain);
         headingPID = new PIDController(0.25, Swerve.kHeadingI, Swerve.kHeadingD, 20);
         headingPID.enableContinuousInput(0, 360);
+        driverControllerBool = new XboxController(0);
+        limelight = newLimelight;
     }
     
     @Override
@@ -39,6 +47,12 @@ public class ActualXboxTeleopDrive extends Command {
      
     @Override
     public void execute(){
+        if (driverControllerBool.getAButton()) {
+            SmartDashboard.putBoolean("LIMELIGHTWORKING", true);
+            drivetrain.drive(limelight.trackTag(1.5),true);
+
+            return;
+        }
         /* X axis is forward from driver perspective, and the Y axis is parallel to the driver station wall. 
         See https://docs.wpilib.org/en/stable/docs/software/advanced-controls/geometry/coordinate-systems.html 
         The controller axes have x as left-right and y as up-down
