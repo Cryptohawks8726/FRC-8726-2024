@@ -87,8 +87,8 @@ public class Limelights extends SubsystemBase {
     public ChassisSpeeds trackTag(double desiredDistance) {
         Transform2d botToTagOffset = new Transform2d(new Translation2d(1.5, 0), new Rotation2d());
         Pose2d botPose = LimelightHelpers.getBotPose2d_wpiBlue("limelight");
-        Pose2d goalPose = botPose.transformBy(LimelightHelpers.getTargetPose3d_RobotSpace("limelight").toPose2d().toTrans);
-
+        Pose2d relCameraPose = LimelightHelpers.getTargetPose3d_RobotSpace("limelight").toPose2d()
+        Pose2d goalPose = botPose.transformBy(new Transform2d(new Translation2d(relCameraPose.getX(), relCameraPose.getY()), new Rotation2d(relCameraPose.getRotation().getRadians());
 
         xCont.setGoal(goalPose.getX());
         yCont.setGoal(goalPose.getY());
